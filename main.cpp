@@ -4,26 +4,31 @@
 #include "include/leaf_contents.h"
 #include "alg/counter_interval.h"
 #include "compressed/dynamic/dynamic.hpp"
+#include "compressed/dynamic/internal/wt_string.hpp"
 
 typedef dyn::wt_str compressed_string;
 
 int main() {
 
-    auto *cstr = new compressed_string(40);
+    vector<pair<dyn::wt_str::char_type, double>> probabilities;
 
-    cstr->insert()
+    size_t n = 129;
 
+    uint32_t L = 32 - __builtin_clz(n);
 
+    printf("number of levels: %d\n", L);
 
+    double prob = 0.5;
+    for (int i = L-1; i > 0; i--) {
+        probabilities.emplace_back(i, prob);
+        prob /= ((double) 2);
+    }
+    probabilities.emplace_back(0, prob);
 
+    auto *cstr_std = new compressed_string(L);
+    auto *cstr_hoffman = new compressed_string(probabilities);
 
-
-
-
-
-
-
-
+    uint32_t index = 0;
 
     /*
     auto *hm = new hist_mem(100);
@@ -49,7 +54,7 @@ int main() {
     */
 
 
-    /*
+
     leaf_contents *leaf = new leaf_contents(10, 1);
 
     counter_interval *ci = new counter_interval(200, 5);
@@ -200,5 +205,10 @@ int main() {
 
     ci->print_tree();
     ci->print_leaf_contents();
-    */
+
+    printf("count(%d) = %d\n", 0, ci->count_query(0));
+    printf("count(%d) = %d\n", 30, ci->count_query(30));
+    printf("count(%d) = %d\n", 66, ci->count_query(66));
+    printf("count(%d) = %d\n", 92, ci->count_query(92));
+
 }

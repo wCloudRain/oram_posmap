@@ -46,16 +46,14 @@ public:
 
     void add_address(address addr) override {
 
+        // simulate accessing position information
+        level_query(addr);
+        rank_query(addr);
+
         cache->add(addr);
         count++;
 
         int rebuild_level = lsb(count) - num_cache_levels;
-        printf("add address %d and level rebuild %d\n", addr, rebuild_level);
-
-        for (int j = 0; j < L; ++j) {
-            printf("%d ", (int) occupied->at(j));
-        }
-        printf("\n");
 
         if(rebuild_level >= 0) {
             dictionary *merged_level = cache;
@@ -69,13 +67,11 @@ public:
             }
 
             if(rebuild_level != L) {
-                printf("here address %d\n", addr);
                 levels[rebuild_level] = merged_level;
                 occupied->at(rebuild_level) = FULL;
             } else {
                 delete merged_level;
             }
-
             cache = new dictionary();
         }
 
@@ -106,6 +102,8 @@ public:
             return levels[level]->rank(addr);
         }
     }
+
+    void add_level_offset(address add, uint32_t level, uint32_t offset) override {}
 };
 
 #endif //ORAM_POSMAP_HIST_MEM_H

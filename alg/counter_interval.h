@@ -12,17 +12,21 @@
 #include <iostream>
 #include "../include/position_map.h"
 #include "../include/node.h"
+#include "../compressed/dynamic/dynamic.hpp"
 
 #define LEFT true
 #define RIGHT false
 #define INCREASE true
 #define DECREASE false
 
+typedef dyn::wt_str compressed_string;
+
 class counter_interval : public position_map
 {
 protected:
     node *root;
     uint32_t width;
+    compressed_string *levels;
 
 public:
 
@@ -32,41 +36,70 @@ public:
     {
         root = new node(0);
         root->contents = new leaf_contents(width, 1);
+
+        uint32_t L = 32 - __builtin_clz(size);
+        vector<pair<dyn::wt_str::char_type, double>> probabilities;
+        double prob = 0.5;
+        for (int i = L-1; i > 0; i--) {
+            probabilities.emplace_back(i, prob);
+            prob /= ((double) 2);
+        }
+        probabilities.emplace_back(0, prob);
+
+        levels = new compressed_string(probabilities);
+        for (int j = 0; j < size; ++j) {
+            levels->insert(j, L-1);
+        }
     }
 
     void add_address(address addr) override {
 
-        // find leaf that contains address
-        node *curr_node = root;
+        // retrieve count and level (this is simulating what we would do)
+        level_query(addr);
+        count_query(addr);
 
-        navigate(addr, root);
+        // find leaf that contains address
+        node *leaf = find_leaf(addr, root);
+        assert(leaf->contents != nullptr);
+
+        leaf->contents->update(addr);
+
+        if(leaf->check_split(width)) {
+
+            leaf->split(width);
+            height_change(leaf, INCREASE);
+        } else if(leaf->check_merge(width)) {
+            leaf->merge();
+            height_change(leaf->parent, DECREASE);
+            leaf->parent->delete_siblings();
+        }
     }
 
-    void navigate(address addr, node *curr_node) {
+    void add_level_offset(address addr, uint32_t level, uint32_t offset) override {
+        levels->remove(addr);
+        levels->insert(addr, level);
+    }
+
+    uint32_t level_query(address addr) {
+        return levels->at(addr);
+    }
+
+    uint32_t count_query(address addr) {
+        node *leaf = find_leaf(addr, root);
+        return leaf->contents->addr_count(addr);
+    }
+
+    node *find_leaf(address addr, node *curr_node) {
         if((curr_node->lchild == nullptr) && (curr_node->rchild == nullptr)) {
             // at leaf node
-            // check contents
-            assert(curr_node->contents != nullptr);
-
-            curr_node->contents->update(addr);
-
-            if(curr_node->check_split(width)) {
-
-                curr_node->split(width);
-                height_change(curr_node, INCREASE);
-            } else if(curr_node->check_merge(width)) {
-
-                curr_node->merge();
-                height_change(curr_node->parent, DECREASE);
-                curr_node->parent->delete_siblings();
-            }
+           return curr_node;
         } else {
             if(addr < curr_node->rchild->left_index) {
                 // branch into left node
-                navigate(addr, curr_node->lchild);
+                find_leaf(addr, curr_node->lchild);
             } else {
                 // branch into right node
-                navigate(addr, curr_node->rchild);
+                find_leaf(addr, curr_node->rchild);
             }
         }
     }
@@ -160,6 +193,8 @@ public:
             curr = curr->parent;
         }
     }
+
+    // printing functions
 
     static void print_tree(const std::string& prefix, const node *node, bool isLeft)
     {

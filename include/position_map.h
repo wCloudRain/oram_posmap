@@ -22,6 +22,8 @@ public:
 
     virtual void add_address(address add) {}
 
+    virtual void add_level_offset(address add, uint32_t level, uint32_t offset) {}
+
 };
 
 #endif //ORAM_POSMAP_POSITION_MAP_H
