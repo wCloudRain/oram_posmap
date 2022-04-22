@@ -30,9 +30,18 @@ public:
         counts[addr]++;
     }
 
-    void add_level_offset(address add, uint32_t level, uint32_t offset) override {
-        offsets[add] = offset;
-        levels[add] = level;
+    void add_level_offset(address addr, uint32_t level, uint32_t offset) override {
+        printf("addr %d inserted at level %d at offset %d\n", addr, level, offset);
+        offsets[addr] = offset;
+        levels[addr] = level;
+    }
+
+    uint32_t auxiliary_info(address addr) override {
+        return counts[addr];
+    }
+
+    uint32_t level_query(address addr) override {
+        return levels[addr];
     }
 
 };

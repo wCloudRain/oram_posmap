@@ -96,6 +96,19 @@ public:
         table[name] = f;
     }
 
+    void swap_and_delete(uint32_t temp_name, uint32_t swap_name) {
+
+        disk_array *old_array = table[swap_name];
+        disk_array *new_array = table[temp_name];
+
+        table[swap_name] = new_array;
+
+        old_array->out->close();
+        old_array->in->close();
+        delete old_array;
+        table.erase(temp_name);
+    }
+
     /**
     Retrieves an element from a specified array and index at the server
     @param name The identifier for the array

@@ -5,6 +5,7 @@
 #include "alg/counter_interval.h"
 #include "compressed/dynamic/dynamic.hpp"
 #include "compressed/dynamic/internal/wt_string.hpp"
+#include "oram/h_oram.h"
 
 typedef dyn::wt_str compressed_string;
 
@@ -12,12 +13,25 @@ int main() {
 
     vector<pair<dyn::wt_str::char_type, double>> probabilities;
 
-    size_t n = 129;
+    size_t n = 65;
+    size_t block_size = 65;
 
-    uint32_t L = 32 - __builtin_clz(n);
+    uint32_t L =  ceil(log2(n));// 32 - __builtin_clz(n);
 
     printf("number of levels: %d\n", L);
 
+    h_oram *oram = new h_oram(n, ARRAY, block_size);
+
+
+    for (int i = 0; i < 10; ++i) {
+        oram->access(i);
+        printf("%d in level %d\n", i, oram->level_query(i));
+        printf("%d in level %d\n", 0, oram->level_query(0));
+        oram->print();
+    }
+
+
+    /*
     double prob = 0.5;
     for (int i = L-1; i > 0; i--) {
         probabilities.emplace_back(i, prob);
@@ -30,7 +44,7 @@ int main() {
 
     uint32_t index = 0;
 
-    /*
+
     auto *hm = new hist_mem(100);
 
 
@@ -54,7 +68,7 @@ int main() {
     */
 
 
-
+    /*
     leaf_contents *leaf = new leaf_contents(10, 1);
 
     counter_interval *ci = new counter_interval(200, 5);
@@ -210,5 +224,9 @@ int main() {
     printf("count(%d) = %d\n", 30, ci->count_query(30));
     printf("count(%d) = %d\n", 66, ci->count_query(66));
     printf("count(%d) = %d\n", 92, ci->count_query(92));
+
+    */
+
+
 
 }

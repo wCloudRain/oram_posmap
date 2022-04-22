@@ -14,7 +14,7 @@ protected:
 public:
 
     explicit benchmark(uint32_t size) : position_map(size) {
-
+        // do nothing
     }
 
     void add_address(address addr) override {
@@ -24,6 +24,17 @@ public:
     void add_level_offset(address add, uint32_t level, uint32_t offset) override {
         // do nothing
     }
+
+    uint32_t auxiliary_info(address addr) override {
+        // do nothing
+        return 0;
+    }
+
+    uint32_t level_query(address addr) override {
+        // do nothing
+        return 0;
+    }
+
 
 };
 

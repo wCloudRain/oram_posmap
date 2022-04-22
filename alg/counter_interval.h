@@ -37,7 +37,6 @@ public:
         root = new node(0);
         root->contents = new leaf_contents(width, 1);
 
-        uint32_t L = 32 - __builtin_clz(size);
         vector<pair<dyn::wt_str::char_type, double>> probabilities;
         double prob = 0.5;
         for (int i = L-1; i > 0; i--) {
@@ -80,7 +79,11 @@ public:
         levels->insert(addr, level);
     }
 
-    uint32_t level_query(address addr) {
+    uint32_t auxiliary_info(address addr) override {
+        return count_query(addr);
+    }
+
+    uint32_t level_query(address addr) override {
         return levels->at(addr);
     }
 

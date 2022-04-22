@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <vector>
+#include <tgmath.h>
 #include "../include/position_map.h"
 #include "../compressed/roaring.hh"
 #include "../include/functions.h"
@@ -24,7 +25,6 @@ protected:
     dictionary *cache;
     bitvector *occupied;
 
-    uint32_t L;
     uint32_t count;
     uint32_t num_cache_levels;
 
@@ -34,7 +34,6 @@ public:
         position_map(size),
         count(0) {
 
-        L = 32 - __builtin_clz(size);
         num_cache_levels = L/2;
         L = L-  num_cache_levels;
 
@@ -80,7 +79,7 @@ public:
         }
     }
 
-    uint32_t level_query(address addr) {
+    uint32_t level_query(address addr) override {
         for (int i = 0; i < L-1; ++i) {
             if(occupied->at(i)) {
                 if(levels[i]->contains(addr)) {
@@ -101,6 +100,10 @@ public:
         } else {
             return levels[level]->rank(addr);
         }
+    }
+
+    uint32_t auxiliary_info(address addr) override {
+        return rank_query(addr);
     }
 
     void add_level_offset(address add, uint32_t level, uint32_t offset) override {}
