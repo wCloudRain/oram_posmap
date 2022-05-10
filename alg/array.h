@@ -11,29 +11,32 @@
 class array_map : public position_map
 {
 protected:
-    uint32_t *levels;
+    uint8_t *levels;
     uint32_t *offsets;
     uint16_t *counts;
 
 public:
 
-    explicit array_map(uint32_t size) :
+    explicit array_map(uint64_t size) :
             position_map(size),
-            levels((uint32_t*) calloc(size, sizeof(uint32_t))),
-            offsets((uint32_t*) calloc(size, sizeof(uint32_t))),
+            levels((uint8_t *) calloc(size, sizeof(uint8_t))),
             counts((uint16_t *) calloc(size, sizeof(uint16_t)))
-        {}
+        {
+        printf("array length: %lu\n", size);
+        }
+
+    ~array_map() {
+        delete levels;
+        delete counts;
+    }
 
     void add_address(address addr) override {
-        offsets[addr];
         levels[addr];
         counts[addr]++;
     }
 
-    void add_level_offset(address addr, uint32_t level, uint32_t offset) override {
-        printf("addr %d inserted at level %d at offset %d\n", addr, level, offset);
-        offsets[addr] = offset;
-        levels[addr] = level;
+    void add_level(address addr, uint32_t level) override {
+        levels[addr] = (uint8_t) level;
     }
 
     uint32_t auxiliary_info(address addr) override {

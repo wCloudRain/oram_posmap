@@ -19,14 +19,12 @@
 #define INCREASE true
 #define DECREASE false
 
-typedef dyn::wt_str compressed_string;
 
 class counter_interval : public position_map
 {
 protected:
     node *root;
     uint32_t width;
-    compressed_string *levels;
 
 public:
 
@@ -37,25 +35,18 @@ public:
         root = new node(0);
         root->contents = new leaf_contents(width, 1);
 
-        vector<pair<dyn::wt_str::char_type, double>> probabilities;
-        double prob = 0.5;
-        for (int i = L-1; i > 0; i--) {
-            probabilities.emplace_back(i, prob);
-            prob /= ((double) 2);
-        }
-        probabilities.emplace_back(0, prob);
+    }
 
-        levels = new compressed_string(probabilities);
-        for (int j = 0; j < size; ++j) {
-            levels->insert(j, L-1);
-        }
+    ~counter_interval() {
+        delete_tree(root);
     }
 
     void add_address(address addr) override {
 
         // retrieve count and level (this is simulating what we would do)
         level_query(addr);
-        count_query(addr);
+        // add level offsets during a rebuild
+        uint64_t count = count_query(addr);
 
         // find leaf that contains address
         node *leaf = find_leaf(addr, root);
@@ -64,7 +55,6 @@ public:
         leaf->contents->update(addr);
 
         if(leaf->check_split(width)) {
-
             leaf->split(width);
             height_change(leaf, INCREASE);
         } else if(leaf->check_merge(width)) {
@@ -74,9 +64,8 @@ public:
         }
     }
 
-    void add_level_offset(address addr, uint32_t level, uint32_t offset) override {
-        levels->remove(addr);
-        levels->insert(addr, level);
+    void add_level(const address addr, uint32_t level) override {
+
     }
 
     uint32_t auxiliary_info(address addr) override {
@@ -84,7 +73,7 @@ public:
     }
 
     uint32_t level_query(address addr) override {
-        return levels->at(addr);
+        return 0;
     }
 
     uint32_t count_query(address addr) {
@@ -92,7 +81,7 @@ public:
         return leaf->contents->addr_count(addr);
     }
 
-    node *find_leaf(address addr, node *curr_node) {
+    static node *find_leaf(address addr, node *curr_node) {
         if((curr_node->lchild == nullptr) && (curr_node->rchild == nullptr)) {
             // at leaf node
            return curr_node;
@@ -108,6 +97,7 @@ public:
     }
 
     void rotate(node *parent, node *child, bool left) {
+
         node *X = (left) ? child->lchild : child->rchild;
         if(X != nullptr) {
             X->parent = parent;
@@ -151,7 +141,7 @@ public:
         uint32_t increment_right = (increase) ? 1 : -1;
         uint32_t increment_left = (increase) ? -1 : 1;
 
-        printf("height change for node %d\n", prev->left_index);
+        // printf("height change for node %d\n", prev->left_index);
         bool flag = false;
         node *curr = prev->parent;
         // the parent node of the height increase is always balanced
@@ -198,6 +188,14 @@ public:
     }
 
     // printing functions
+
+    void static delete_tree(node *node) {
+        if(node != nullptr) {
+            delete_tree(node->lchild);
+            delete_tree(node->rchild);
+            delete node;
+        }
+    }
 
     static void print_tree(const std::string& prefix, const node *node, bool isLeft)
     {

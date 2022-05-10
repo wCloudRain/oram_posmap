@@ -21,7 +21,7 @@ public:
        // do nothing
     }
 
-    void add_level_offset(address add, uint32_t level, uint32_t offset) override {
+    void add_level(address add, uint32_t level) override {
         // do nothing
     }
 

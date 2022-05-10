@@ -43,9 +43,13 @@ public:
         left_index = contents->index[0];
     }
 
+    ~node() {
+        delete contents;
+    }
+
 
     bool check_split(uint32_t width) {
-        return contents->count() >= 2*width;
+        return contents->count() >= 2.0*width;
     }
 
     bool check_merge(uint32_t width) {
@@ -55,12 +59,20 @@ public:
         } else {
             uint32_t count;
             if(is_rchild) {
-                count = parent->lchild->contents->count();
+                if(parent->lchild->contents == nullptr) {
+                    return false;
+                } else {
+                    count = parent->lchild->contents->count();
+                }
             } else {
-                count = parent->rchild->contents->count();
+                if(parent->rchild->contents == nullptr) {
+                    return false;
+                } else {
+                    count = parent->rchild->contents->count();
+                }
             }
             count += contents->count();
-            return count < 1.5 * width;
+            return count < 1.0 * width;
         }
     }
 

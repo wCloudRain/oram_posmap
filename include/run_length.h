@@ -1,21 +1,11 @@
 //
-// Created by wholland on 20/04/22.
+// Created by wholland on 11/05/22.
 //
 
-#ifndef ORAM_POSMAP_LEAF_CONTENTS_H
-#define ORAM_POSMAP_LEAF_CONTENTS_H
+#ifndef ORAM_POSMAP_RUN_LENGTH_H
+#define ORAM_POSMAP_RUN_LENGTH_H
 
-#include <cstdint>
-#include <assert.h>
-#include <cstdlib>
-#include <cstdio>
-#include "position_map.h"
-
-#define LEFT true
-#define RIGHT false
-
-class leaf_contents {
-
+class run_length {
 protected:
     uint16_t cardinality;
 
@@ -24,11 +14,11 @@ public:
     uint16_t *counts;
 
     explicit leaf_contents(uint32_t width, uint32_t cardinality) :
-            cardinality(cardinality)
-    {
-        index = (uint64_t *) calloc(2*width+1, sizeof(uint64_t *));
-        counts = (uint16_t*) calloc(2*width+1, sizeof(uint16_t*));
-    }
+    cardinality(cardinality)
+            {
+                    index = (uint64_t *) calloc(2*width+1, sizeof(uint64_t *));
+            counts = (uint16_t*) calloc(2*width+1, sizeof(uint16_t*));
+            }
 
     ~leaf_contents() {
         delete index;
@@ -204,10 +194,10 @@ public:
 
         printf("CONTENTS : ");
         for (int i = 0; i < cardinality; ++i) {
-               printf(" (%lu, %d)|", index[i], counts[i]);
+            printf(" (%lu, %d)|", index[i], counts[i]);
         }
         printf("\n---cardinality: %d---\n", cardinality);
     }
 };
 
-#endif //ORAM_POSMAP_LEAF_CONTENTS_H
+#endif //ORAM_POSMAP_RUN_LENGTH_H
