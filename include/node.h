@@ -19,7 +19,8 @@ public:
     node *rchild;
     leaf_contents *contents;
     uint32_t left_index;
-    int8_t balance;
+    //int8_t balance;
+    uint16_t depth;
     bool is_rchild;
 
     explicit node(uint32_t left_index) :
@@ -28,8 +29,9 @@ public:
             rchild(nullptr),
             contents(nullptr),
             left_index(left_index),
-            balance(0),
-            is_rchild(false)
+            //balance(0),
+            is_rchild(false),
+            depth(0)
     {}
 
     explicit node(node *parent, leaf_contents *contents) :
@@ -37,8 +39,9 @@ public:
             lchild(nullptr),
             rchild(nullptr),
             contents(contents),
-            balance(0),
-            is_rchild(false)
+            //balance(0),
+            is_rchild(false),
+            depth(0)
     {
         left_index = contents->index[0];
     }
@@ -46,7 +49,6 @@ public:
     ~node() {
         delete contents;
     }
-
 
     bool check_split(uint32_t width) {
         return contents->count() >= 2.0*width;
@@ -83,14 +85,16 @@ public:
         rchild = new node(this, right_contents);
         rchild->is_rchild = true;
 
+        depth++;
         contents = nullptr;
     }
 
-    void merge() {
-        leaf_contents *left = parent->lchild->contents, *right = parent->rchild->contents;
+    void merge(uint16_t width) {
+        leaf_contents *left = lchild->contents, *right = rchild->contents;
 
-        left->merge(right);
-        parent->contents = left;
+        contents = new leaf_contents(width, 0);
+        contents->merge(left, right);
+        depth = 0;
     }
 
     void delete_siblings() {
@@ -98,6 +102,27 @@ public:
         delete rchild;
         lchild = nullptr;
         rchild = nullptr;
+    }
+
+    uint32_t calc_depth() {
+        int left, right;
+        if(lchild != nullptr) {
+            left = lchild->calc_depth()+1;
+        } else {
+            left = 0;
+        }
+        if(rchild != nullptr) {
+            right = rchild->calc_depth()+1;
+        } else {
+            right = 0;
+        }
+        return (left > right) ? left : right;
+    }
+
+    int calculate_balance() {
+            int left_depth = (lchild == nullptr) ? 0 : lchild->depth;
+            int right_depth = (rchild == nullptr) ? 0 : rchild->depth;
+            return right_depth - left_depth;
     }
 };
 

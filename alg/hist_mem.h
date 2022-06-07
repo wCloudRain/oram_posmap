@@ -58,6 +58,7 @@ public:
 
         // simulate accessing position information
         // uint32_t level = level_query(addr);
+
         uint32_t rank = rank_query(addr);
 
         cache->add(addr);

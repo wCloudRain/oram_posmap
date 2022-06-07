@@ -5,7 +5,7 @@
 #include "compressed/roaring.hh"
 #include "alg/hist_mem.h"
 #include "include/leaf_contents.h"
-#include "alg/counter_interval.h"
+#include "alg/compressed_metadata.h"
 #include "compressed/dynamic/dynamic.hpp"
 #include "compressed/dynamic/internal/wt_string.hpp"
 #include "oram/h_oram.h"
@@ -17,6 +17,8 @@
 #define SSD 0
 #define K5 1
 #define CLOUD 2
+#define ACCESS "a"
+
 
 typedef dyn::wt_str compressed_string;
 
@@ -26,19 +28,57 @@ using namespace std;
 uint64_t execute_test(const char alg, const string& file_name, uint64_t size) {
 
     printf("\n:: file name: %s\n", file_name.c_str());
-
-    auto oram = new h_oram(size, alg);
-
     position_map *pm;
-    string str;
+    switch (alg) {
+        case BENCHMARK:
+            printf("POS MAP = BENCHMARK\n");
+            pm = new benchmark(size);
+            break;
+        case ARRAY:
+            printf("POS MAP = ARRAY\n");
+            pm = new array_map(size);
+            break;
+        case HISTORICAL:
+            printf("POS MAP = HISTORICAL\n");
+            pm = new hist_mem(size);
+            break;
+        case COUNTER:
+            printf("POS MAP = COUNTER INTERVAL\n");
+            pm = new compressed_metadata(size, 2000);
+            break;
+    }
+
+    //auto *check = new array_map(size);
+    string str, type, ID, value;
     ifstream ifs(file_name, ifstream::in);
+    uint64_t count = 0, max = 0;
+
     printf("start reading file (max element: %lu)\n", size);
     auto start = chrono::high_resolution_clock::now();
-    uint64_t count = 0, max = 0;
-    while (getline(ifs, str) && count < 3058934) {
-        auto addr = (uint64_t) stoul(str);
-        oram->access(addr);
-        //pm->add_address(addr);
+    while (getline(ifs, str)) {
+        // process the input string
+        istringstream ss(str);
+        if(getline(ss, type, ',')) {
+            if(getline(ss, ID,',')) {
+                auto addr = (uint64_t) stoul(ID);
+                if(type == ACCESS) {
+                    pm->add_address(addr);
+                    //check->add_address(addr);
+                } else {
+                    if(getline(ss, value, ',')) {
+                        auto val = (uint16_t) stoul(value);
+                        pm->add_level(addr, val);
+                        //check->add_level(addr, val);
+                    }
+                }
+                //printf("count: %d = %d, level: %d = %d\n", pm->auxiliary_info(addr), check->auxiliary_info(addr),
+                        //pm->level_query(addr), check->level_query(addr));
+            } else {
+                printf(">> couldn't parse file address\n");
+            }
+        } else {
+            printf(">> couldn't parse operation type\n");
+        }
         count++;
     }
     printf("end reading file\n");
@@ -49,27 +89,30 @@ uint64_t execute_test(const char alg, const string& file_name, uint64_t size) {
     cout << "time: " << duration.count() << endl;
     ifs.close();
 
-    //delete pm;
     return duration.count();
 }
 
 int main() {
 
+
+
+
     string file_path = "/home/student.unimelb.edu.au/wholland/Dropbox/oram_posmap/data/";
 
-    string files[3] = {"ssdtrace.txt", "k5b.txt", "cloud_storage.txt"};
+    string files[3] = {"ssd-level.txt", "k5-level.txt", "cloud-level.txt"};
     uint64_t sizes[3] = {3057934, 1065643040, 4370466280};
 
     vector<uint64_t> times;
 
-    string file_name_output = file_path + "results.txt";
-    ofstream ofs;
-    ofs.open(file_name_output);
+    //string file_name_output = file_path + "results.txt";
+    //ofstream ofs;
+    //ofs.open(file_name_output);
 
-    uint8_t file = SSD;
+    uint8_t file = K5;
 
-    execute_test(BENCHMARK, file_path + files[file], sizes[file]);
-    uint64_t run_time;
+
+    execute_test(COUNTER, file_path + files[file], sizes[file]);
+
 
     /*
     for (int i = 0; i < 3; ++i) {

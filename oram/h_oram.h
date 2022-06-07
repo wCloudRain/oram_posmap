@@ -10,7 +10,7 @@
 #include "../alg/benchmark.h"
 #include "../alg/array.h"
 #include "../alg/hist_mem.h"
-#include "../alg/counter_interval.h"
+#include "../alg/compressed_metadata.h"
 
 #define BENCHMARK 0
 #define ARRAY 1
@@ -34,6 +34,9 @@ private:
     uint32_t L;
     set<uint64_t> **levels;
     //uint32_t *level_sizes;
+    ofstream ofs;
+
+
 
 public:
 
@@ -55,7 +58,7 @@ public:
                 break;
             case COUNTER:
                 printf("POS MAP = COUNTER INTERVAL\n");
-                pm = new counter_interval(size, 50);
+                pm = new compressed_metadata(size, 50);
                 break;
         }
         L = ceil(log2(size));;
@@ -66,6 +69,9 @@ public:
         for (int l = 0; l < L; ++l) {
             levels[l] = new set<uint64_t>();
         }
+        string file_path = "/home/student.unimelb.edu.au/wholland/Dropbox/oram_posmap/data/";
+        string file_name_output = file_path + "cloud-level.txt";
+        ofs.open(file_name_output);
         printf("initialization complete\n");
     }
 
@@ -74,10 +80,11 @@ public:
             delete levels[j];
         }
         delete pm;
+        ofs.close();
     }
 
     void access(const address addr) {
-
+        ofs << "a," <<  addr << "\n";
         // simulation. we do not perform actual access
 
         // update position map
@@ -86,6 +93,7 @@ public:
         count++;
         levels[LEVEL_ZERO]->insert(addr);
         pm->add_level(addr, LEVEL_ZERO);
+        ofs << "l," <<  addr << "," << LEVEL_ZERO << "\n";
 
         int rebuild_level = lsb(count);
 
@@ -108,8 +116,11 @@ public:
         }
 
         // update position map
-        for (unsigned long it : *merged_level) {
-            pm->add_level(it, rebuild_level);
+        if(rebuild_level != LEVEL_ZERO) {
+            for (unsigned long it : *merged_level) {
+                pm->add_level(it, rebuild_level);
+                ofs << "l," <<  it << "," << rebuild_level << "\n";
+            }
         }
         pm->add_address(addr);
 
