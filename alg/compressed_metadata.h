@@ -16,9 +16,6 @@
 
 #define LEFT true
 #define RIGHT false
-#define INCREASE true
-#define DECREASE false
-
 
 class compressed_metadata : public position_map
 {
@@ -55,35 +52,124 @@ public:
         // add level offsets during a rebuild
         uint64_t count = count_query(addr);
         // find leaf that contains address
-        node *leaf = find_leaf(addr, root_counter);
-        assert(leaf->contents != nullptr);
-        leaf->contents->update_value(addr, count+1);
-
-        if(leaf->check_split(width)) {
-            leaf->split(width);
-            height_change(leaf, INCREASE);
-        } else if(leaf->check_merge(width)) {
-            node* new_leaf = leaf->parent;
-            new_leaf->merge(width);
-            new_leaf->delete_siblings();
-            height_change(new_leaf, DECREASE);
-        }
+        add_value(&root_counter, addr, count+1);
     }
 
     void add_level(const address addr, uint32_t level) override {
-        node *leaf = find_leaf(addr, root_level);
+        add_value(&root_level, addr, level);
+    }
+
+    void add_value(node **root, const address addr, uint32_t value) {
+        node *leaf = find_leaf(addr, *root);
         assert(leaf->contents != nullptr);
-        leaf->contents->update_value(addr, level);
+        leaf->contents->update_value(addr, value);
 
         if(leaf->check_split(width)) {
             leaf->split(width);
-            height_change(leaf, leaf->depth);
-        } else if(leaf->check_merge(width)) {
-            node* new_leaf = leaf->parent;
-            new_leaf->merge(width);
-            new_leaf->delete_siblings();
-            height_change(new_leaf, new_leaf->depth);
+            //print_tree_level();
+            *root = height_change(*root, leaf->left_index);
+
+        } else {
+            node *parent = leaf->parent;
+            if(parent != nullptr) {
+                if(parent->check_merge(width)) {
+                    parent->merge(width);
+                    parent->delete_siblings();
+                    *root = height_change(*root, parent->left_index);
+                }
+            }
         }
+    }
+
+    static int height(node *head){
+        if(head== nullptr) return 0;
+        return head->height;
+    }
+    
+    static node *right_rotation(node *head) {
+        //rotate
+        //printf("rotating right around %d\n", head->ID);
+        node *new_head = head->lchild;
+        head->lchild = new_head->rchild;
+        new_head->rchild = head;
+
+        // change parents
+        new_head->parent = head->parent;
+        head->parent = new_head;
+        head->lchild->parent = head;
+
+        // update heights
+        head->height = 1+max(height(head->lchild), height(head->rchild));
+        new_head->height = 1+max(height(new_head->lchild), height(new_head->rchild));
+
+        // update left_index
+        head->left_index = head->lchild->left_index;
+        return new_head;
+    }
+
+    static node *left_rotation(node *head) {
+        //printf("rotating left around %d\n", head->ID);
+        // rotate
+        node * new_head = head->rchild;
+        head->rchild = new_head->lchild;
+        new_head->lchild = head;
+
+        // update parents
+        new_head->parent = head->parent;
+        head->parent = new_head;
+        head->rchild->parent = head;
+
+        // update heights
+        head->height = 1+max(height(head->lchild), height(head->rchild));
+        new_head->height = 1+max(height(new_head->lchild), height(new_head->rchild));
+
+        // update left_index
+        new_head->left_index = head->left_index;
+        return new_head;
+    }
+
+    static node *balance(node *temp) {
+        temp->height = 1 + max(height(temp->lchild), height(temp->rchild));
+        int bal_factor = temp->calculate_balance();
+        //printf("ID %d, bal factor %d\n", temp->ID, bal_factor);
+        if (bal_factor > 1) {
+            //printf("ID %d, bal factor %d\n", temp->ID, bal_factor);
+            if (temp->rchild->calculate_balance() > 0) {
+                //printf("rot left\n");
+                return left_rotation(temp);
+            } else {
+                //printf("rot right-left\n");
+                temp->rchild = right_rotation(temp->rchild);
+                return left_rotation(temp);
+            }
+        } else if (bal_factor < -1) {
+            //printf("ID %d, bal factor %d\n", temp->ID, bal_factor);
+            if (temp->lchild->calculate_balance() > 0) {
+                //printf("rot right\n");
+                temp->lchild = left_rotation(temp->lchild);
+                return right_rotation(temp);
+            } else {
+                //printf("rot left-right\n");
+                return right_rotation(temp);
+            }
+        }
+        return temp;
+    }
+
+    static node *height_change(node *root, uint64_t index) {
+        //printf("node %d, searching for index %lu\n", root->ID, index);
+        if((root->lchild == nullptr) && (root->rchild == nullptr)) {
+            root->height = 1;
+            return root;
+        } else if (index < root->rchild->left_index) {
+            root->lchild = height_change(root->lchild, index);
+            return balance(root);
+        }
+        else {
+            root->rchild = height_change(root->rchild, index);
+            return balance(root);
+        }
+        //return root;
     }
 
     uint32_t auxiliary_info(address addr) override {
@@ -115,98 +201,6 @@ public:
         }
     }
 
-    void rotate(node *parent, node *child, bool left) {
-        node *X = (left) ? child->lchild : child->rchild;
-        if(X != nullptr) {
-            X->parent = parent;
-            X->is_rchild = left;
-        } else {
-            print_tree("", parent->parent, false);
-        }
-        node* grandparent = parent->parent;
-        // check if a change in root occurred.
-        if(root_counter == parent) {
-            root_counter = child;
-        } else if(root_level == parent) {
-            root_level = child;
-        } else {
-            if(parent->is_rchild) {
-                grandparent->rchild = child;
-                child->is_rchild = true;
-            } else {
-                grandparent->lchild = child;
-                child->is_rchild = false;
-            }
-        }
-        // rotate the parent node
-        if(left) {
-            parent->rchild = X;
-            child->lchild = parent;
-            // update left index
-            child->left_index = parent->left_index;
-        } else {
-            parent->lchild = X;
-            child->rchild = parent;
-            // update left index
-            parent->left_index = X->left_index;
-        }
-        parent->is_rchild = !left;
-        child->parent = grandparent;
-        parent->parent = child;
-
-        // restore balance
-        uint16_t depth = child->calc_depth();
-        child->depth = depth;
-        parent->depth = depth+1;
-    }
-
-    void height_change(node *prev, int depth) {
-        node *curr = prev->parent;
-        if(curr != nullptr) {
-            // continue
-            node *prev_sibling = prev->is_rchild ? (curr->lchild) : (curr->rchild);
-            int other_depth = 0;
-            if(prev_sibling != nullptr) {
-                other_depth = prev_sibling->depth;
-            }
-            int balance = prev->is_rchild ? (depth-other_depth) : (other_depth-depth);
-
-            if(balance > 1 || balance < -1) {
-                node *tall_child, *X;
-                switch(balance) {
-                    case 2:
-                        tall_child = curr->rchild;
-                        switch(tall_child->calculate_balance()) {
-                            case 1:
-                                rotate(curr, tall_child, LEFT);
-                                break;
-                            case -1:
-                                X = tall_child->lchild;
-                                rotate(tall_child, X, RIGHT);
-                                rotate(curr, X, LEFT);
-                                break;
-                        }
-                        break;
-                    case -2:
-                        tall_child = curr->lchild;
-                        switch(tall_child->calculate_balance()) {
-                            case 1:
-                                X = tall_child->rchild;
-                                rotate(tall_child, X, LEFT);
-                                rotate(curr, X, RIGHT);
-                                break;
-                            case -1:
-                                rotate(curr, tall_child, RIGHT);
-                                break;
-                        }
-                        break;
-                }
-            }
-            curr->depth = (depth > other_depth) ? (depth+1) : (other_depth+1);
-            height_change(curr, curr->depth);
-        }
-    }
-
     // printing functions
 
     void static delete_tree(node *node) {
@@ -226,8 +220,8 @@ public:
 
             // print the value of the node
             uint16_t count = (node->contents == nullptr) ? 0 : node->contents->count();
-            std::string print = std::to_string( count);
-            print = print + ":" + std::to_string(node->depth)+ ":" + std::to_string(node->left_index);
+            std::string print = std::to_string( node->ID);
+            print = print + ":" + std::to_string(node->height)+ ":" + std::to_string(node->left_index);
             std::cout << print << std::endl;
 
             // enter the next tree level - left and right branch

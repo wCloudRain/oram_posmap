@@ -20,22 +20,22 @@ protected:
     uint16_t cardinality;
 
 public:
-    uint64_t *index;
+    uint32_t *index;
     uint16_t *values;
 
     explicit leaf_contents(uint32_t width, uint32_t cardinality, uint16_t value) :
             cardinality(cardinality)
     {
-        index = (uint64_t*) calloc(2*width+1, sizeof(uint64_t*));
-        values = (uint16_t*) calloc(2*width+1, sizeof(uint16_t*));
+        index = (uint32_t*) calloc(2.0*width+1, sizeof(uint32_t*));
+        values = (uint16_t*) calloc(2.0*width+1, sizeof(uint16_t*));
         values[0] = value;
     }
 
     explicit leaf_contents(uint32_t width, uint32_t cardinality) :
             cardinality(cardinality)
     {
-        index = (uint64_t*) calloc(2*width+1, sizeof(uint64_t*));
-        values = (uint16_t*) calloc(2*width+1, sizeof(uint16_t*));
+        index = (uint32_t*) calloc(2.0*width+1, sizeof(uint32_t*));
+        values = (uint16_t*) calloc(2.0*width+1, sizeof(uint16_t*));
     }
 
     ~leaf_contents() {

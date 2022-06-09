@@ -44,23 +44,26 @@ uint64_t execute_test(const char alg, const string& file_name, uint64_t size) {
             break;
         case COUNTER:
             printf("POS MAP = COUNTER INTERVAL\n");
-            pm = new compressed_metadata(size, 2000);
+            pm = new compressed_metadata(size, 200);
             break;
     }
 
     //auto *check = new array_map(size);
     string str, type, ID, value;
     ifstream ifs(file_name, ifstream::in);
-    uint64_t count = 0, max = 0;
+    uint64_t count = 0;
+
+    //set<uint64_t> items;
 
     printf("start reading file (max element: %lu)\n", size);
     auto start = chrono::high_resolution_clock::now();
-    while (getline(ifs, str)) {
+    while (getline(ifs, str) && count < 30579340) {
         // process the input string
         istringstream ss(str);
         if(getline(ss, type, ',')) {
             if(getline(ss, ID,',')) {
                 auto addr = (uint64_t) stoul(ID);
+                //items.insert(addr);
                 if(type == ACCESS) {
                     pm->add_address(addr);
                     //check->add_address(addr);
@@ -95,8 +98,6 @@ uint64_t execute_test(const char alg, const string& file_name, uint64_t size) {
 int main() {
 
 
-
-
     string file_path = "/home/student.unimelb.edu.au/wholland/Dropbox/oram_posmap/data/";
 
     string files[3] = {"ssd-level.txt", "k5-level.txt", "cloud-level.txt"};
@@ -108,10 +109,11 @@ int main() {
     //ofstream ofs;
     //ofs.open(file_name_output);
 
+
     uint8_t file = K5;
 
 
-    execute_test(COUNTER, file_path + files[file], sizes[file]);
+    execute_test(HISTORICAL, file_path + files[file], sizes[file]);
 
 
     /*

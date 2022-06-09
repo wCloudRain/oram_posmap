@@ -11,17 +11,16 @@
 #include "position_map.h"
 #include "leaf_contents.h"
 
-class node
-{
+class node {
+
 public:
     node *parent;
     node *lchild;
     node *rchild;
     leaf_contents *contents;
     uint32_t left_index;
-    //int8_t balance;
-    uint16_t depth;
-    bool is_rchild;
+    uint16_t height;
+    uint32_t ID;
 
     explicit node(uint32_t left_index) :
             parent(nullptr),
@@ -29,9 +28,8 @@ public:
             rchild(nullptr),
             contents(nullptr),
             left_index(left_index),
-            //balance(0),
-            is_rchild(false),
-            depth(0)
+            height(1),
+            ID(rand()%50)
     {}
 
     explicit node(node *parent, leaf_contents *contents) :
@@ -39,9 +37,8 @@ public:
             lchild(nullptr),
             rchild(nullptr),
             contents(contents),
-            //balance(0),
-            is_rchild(false),
-            depth(0)
+            height(1),
+            ID(rand()%50)
     {
         left_index = contents->index[0];
     }
@@ -56,25 +53,14 @@ public:
 
     bool check_merge(uint32_t width) {
         // check sibling count
-        if(parent == nullptr) {
+        if(lchild->contents == nullptr) {
+            return false;
+        } else if (rchild->contents == nullptr) {
             return false;
         } else {
-            uint32_t count;
-            if(is_rchild) {
-                if(parent->lchild->contents == nullptr) {
-                    return false;
-                } else {
-                    count = parent->lchild->contents->count();
-                }
-            } else {
-                if(parent->rchild->contents == nullptr) {
-                    return false;
-                } else {
-                    count = parent->rchild->contents->count();
-                }
-            }
-            count += contents->count();
-            return count < 1.0 * width;
+            uint32_t left = lchild->contents->count();
+            uint32_t right = rchild->contents->count();
+            return (left+right) < 2.0*width;
         }
     }
 
@@ -83,9 +69,8 @@ public:
 
         lchild = new node(this, contents);
         rchild = new node(this, right_contents);
-        rchild->is_rchild = true;
 
-        depth++;
+        //height++;
         contents = nullptr;
     }
 
@@ -94,7 +79,7 @@ public:
 
         contents = new leaf_contents(width, 0);
         contents->merge(left, right);
-        depth = 0;
+        // height = 1;
     }
 
     void delete_siblings() {
@@ -104,15 +89,15 @@ public:
         rchild = nullptr;
     }
 
-    uint32_t calc_depth() {
+    uint32_t calc_height() {
         int left, right;
         if(lchild != nullptr) {
-            left = lchild->calc_depth()+1;
+            left = lchild->calc_height()+1;
         } else {
             left = 0;
         }
         if(rchild != nullptr) {
-            right = rchild->calc_depth()+1;
+            right = rchild->calc_height()+1;
         } else {
             right = 0;
         }
@@ -120,9 +105,9 @@ public:
     }
 
     int calculate_balance() {
-            int left_depth = (lchild == nullptr) ? 0 : lchild->depth;
-            int right_depth = (rchild == nullptr) ? 0 : rchild->depth;
-            return right_depth - left_depth;
+            int left_height = (lchild == nullptr) ? 0 : lchild->height;
+            int right_height = (rchild == nullptr) ? 0 : rchild->height;
+            return right_height - left_height;
     }
 };
 
