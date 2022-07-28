@@ -20,7 +20,8 @@ public:
     explicit array_map(uint64_t size) :
             position_map(size),
             levels((uint8_t *) calloc(size, sizeof(uint8_t))),
-            counts((uint16_t *) calloc(size, sizeof(uint16_t)))
+            counts((uint16_t *) calloc(size, sizeof(uint16_t))),
+            offsets((uint32_t *) calloc(size, sizeof(uint32_t)))
         {
         printf("array length: %lu\n", size);
         }
@@ -31,6 +32,7 @@ public:
     }
 
     void add_address(address addr) override {
+        // print();
         levels[addr];
         counts[addr]++;
     }
@@ -45,6 +47,14 @@ public:
 
     uint32_t level_query(address addr) override {
         return levels[addr];
+    }
+
+    void print() {
+        printf("ARRAY: [");
+        for (int j = 0; j < 10; ++j) {
+            printf("(%d, %d), ", j, counts[j]);
+        }
+        printf("]\n");
     }
 
 };

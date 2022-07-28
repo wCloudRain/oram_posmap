@@ -46,6 +46,7 @@ public:
 
     void add_address(address addr) override {
 
+
         // retrieve count and level (this is simulating what we would do)
         level_query(addr);
 
@@ -53,6 +54,8 @@ public:
         uint64_t count = count_query(addr);
         // find leaf that contains address
         add_value(&root_counter, addr, count+1);
+        //print_tree_counter();
+        //print_leaf_contents(true);
     }
 
     void add_level(const address addr, uint32_t level) override {
@@ -67,18 +70,29 @@ public:
         if(leaf->check_split(width)) {
             leaf->split(width);
             //print_tree_level();
+            //printf("split\n");
             *root = height_change(*root, leaf->left_index);
 
         } else {
             node *parent = leaf->parent;
             if(parent != nullptr) {
                 if(parent->check_merge(width)) {
+                    //printf("merge\n");
                     parent->merge(width);
                     parent->delete_siblings();
                     *root = height_change(*root, parent->left_index);
                 }
             }
         }
+        /*
+        printf("\n::LEVEL::\n");
+        print_tree_level();
+        print_leaf_contents(false);
+        print_tree_counter();
+
+        */
+        //print_tree_level();
+        //print_leaf_contents(true);
     }
 
     static int height(node *head){
@@ -220,7 +234,7 @@ public:
 
             // print the value of the node
             uint16_t count = (node->contents == nullptr) ? 0 : node->contents->count();
-            std::string print = std::to_string( node->ID);
+            std::string print = std::to_string( count);
             print = print + ":" + std::to_string(node->height)+ ":" + std::to_string(node->left_index);
             std::cout << print << std::endl;
 

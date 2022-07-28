@@ -30,7 +30,7 @@ private:
     uint64_t count;
     uint64_t cycle;
     uint64_t size;
-    position_map *pm;
+    //position_map *pm;
     uint32_t L;
     set<uint64_t> **levels;
     //uint32_t *level_sizes;
@@ -40,10 +40,11 @@ private:
 
 public:
 
-    h_oram(address size, uint32_t type) :
+    h_oram(address size, uint32_t type, string file_name) :
         size(size),
         count(0)
     {
+        /*
         switch (type) {
             case BENCHMARK:
                 pm = new benchmark(size);
@@ -61,6 +62,7 @@ public:
                 pm = new compressed_metadata(size, 50);
                 break;
         }
+         */
         L = ceil(log2(size));;
         cycle = pow(2,L);
         printf("NUMBER OF LEVELS: %d\n", L);
@@ -69,8 +71,8 @@ public:
         for (int l = 0; l < L; ++l) {
             levels[l] = new set<uint64_t>();
         }
-        string file_path = "/home/student.unimelb.edu.au/wholland/Dropbox/oram_posmap/data/";
-        string file_name_output = file_path + "cloud-level.txt";
+        string file_path = "/home/student.unimelb.edu.au/wholland/Dropbox/oram_posmap/data/test/";
+        string file_name_output = file_path + file_name + "-level.txt";
         ofs.open(file_name_output);
         printf("initialization complete\n");
     }
@@ -79,7 +81,7 @@ public:
         for (int j = 0; j < L; ++j) {
             delete levels[j];
         }
-        delete pm;
+        // delete pm;
         ofs.close();
     }
 
@@ -92,7 +94,7 @@ public:
 
         count++;
         levels[LEVEL_ZERO]->insert(addr);
-        pm->add_level(addr, LEVEL_ZERO);
+        // pm->add_level(addr, LEVEL_ZERO);
         ofs << "l," <<  addr << "," << LEVEL_ZERO << "\n";
 
         int rebuild_level = lsb(count);
@@ -118,11 +120,11 @@ public:
         // update position map
         if(rebuild_level != LEVEL_ZERO) {
             for (unsigned long it : *merged_level) {
-                pm->add_level(it, rebuild_level);
+                // pm->add_level(it, rebuild_level);
                 ofs << "l," <<  it << "," << rebuild_level << "\n";
             }
         }
-        pm->add_address(addr);
+        // pm->add_address(addr);
 
         if(rebuild_level == L) {
             delete merged_level;
@@ -150,6 +152,7 @@ public:
         printf("\n");
     }
 
+    /*
     uint32_t level_query(address addr) {
         return pm->level_query(addr);
     }
@@ -157,6 +160,7 @@ public:
     uint32_t aux_query(address addr) {
         return pm->auxiliary_info(addr);
     }
+     */
 };
 
 #endif //ORAM_POSMAP_H_ORAM_H

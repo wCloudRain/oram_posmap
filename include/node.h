@@ -20,7 +20,6 @@ public:
     leaf_contents *contents;
     uint32_t left_index;
     uint16_t height;
-    uint32_t ID;
 
     explicit node(uint32_t left_index) :
             parent(nullptr),
@@ -28,8 +27,7 @@ public:
             rchild(nullptr),
             contents(nullptr),
             left_index(left_index),
-            height(1),
-            ID(rand()%50)
+            height(1)
     {}
 
     explicit node(node *parent, leaf_contents *contents) :
@@ -37,8 +35,7 @@ public:
             lchild(nullptr),
             rchild(nullptr),
             contents(contents),
-            height(1),
-            ID(rand()%50)
+            height(1)
     {
         left_index = contents->index[0];
     }
@@ -77,7 +74,7 @@ public:
     void merge(uint16_t width) {
         leaf_contents *left = lchild->contents, *right = rchild->contents;
 
-        contents = new leaf_contents(width, 0);
+        contents = new leaf_contents(width, left->count() + right->count());
         contents->merge(left, right);
         // height = 1;
     }

@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/test/Nexus5_Kernel_BIOTracer_traces/WorkSpace_nexus5/bootimg-tools" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/test/Nexus5_Kernel_BIOTracer_traces/WorkSpace_nexus5/mkbootimg" vcs="Git" />
   </component>
 </project>

@@ -14,34 +14,34 @@
 #define LEFT true
 #define RIGHT false
 
+
+using namespace std;
+
 class leaf_contents {
 
 protected:
     uint16_t cardinality;
 
 public:
-    uint32_t *index;
-    uint16_t *values;
+    vector<uint32_t> index;
+    vector<uint16_t> values;
 
     explicit leaf_contents(uint32_t width, uint32_t cardinality, uint16_t value) :
             cardinality(cardinality)
     {
-        index = (uint32_t*) calloc(2.0*width+1, sizeof(uint32_t*));
-        values = (uint16_t*) calloc(2.0*width+1, sizeof(uint16_t*));
+        index.reserve(2*width+1);
+        values.reserve(2*width+1);
         values[0] = value;
     }
 
     explicit leaf_contents(uint32_t width, uint32_t cardinality) :
             cardinality(cardinality)
     {
-        index = (uint32_t*) calloc(2.0*width+1, sizeof(uint32_t*));
-        values = (uint16_t*) calloc(2.0*width+1, sizeof(uint16_t*));
+        index.reserve(2*width+1);
+        values.reserve(2*width+1);
     }
 
-    ~leaf_contents() {
-        delete index;
-        delete values;
-    }
+    ~leaf_contents() = default;
 
     uint32_t count() {
         return cardinality;
@@ -66,9 +66,19 @@ public:
         return offset;
     }
 
+    void my_assert(uint64_t addr, uint16_t value, bool expr) {
+        if (!expr) {
+            std::cerr << "ASSERT\t" << addr << " vs. " << value << "\n";
+            print();
+            abort();
+        }
+    }
+
     void update_value(address addr, uint16_t new_value) {
 
-        assert(addr >= index[0]);
+        //assert(addr >= index[0]);
+
+        my_assert(addr, index[0], addr >= index[0]);
 
         // find the correct offset
         uint32_t offset = find_offset(addr);
@@ -172,8 +182,12 @@ public:
                 values[i] = values[i+shift_size];
             }
             cardinality -= shift_size;
+            index.reserve(cardinality);
+            values.reserve(cardinality);
         } else {
             //printf(" ---> right shift at offset %d and shift size %d\n", st_offset, shift_size);
+            index.reserve(cardinality+shift_size);
+            values.reserve(cardinality+shift_size);
             for (int i = cardinality-1; i>((int) st_offset)-1; i--) {
                 //printf("%d goes to %d\n", i, i+shift_size);
                 index[i+shift_size] = index[i];
@@ -193,6 +207,8 @@ public:
             right_contents->index[i] = index[i+cardinality];
             right_contents->values[i] = values[i+cardinality];
         }
+        index.reserve(cardinality);
+        values.reserve(cardinality);
         return right_contents;
     }
 
@@ -201,7 +217,7 @@ public:
         uint32_t left_card = left_contents->cardinality;
         for (int i = 0; i < left_card; ++i) {
             index[i] = left_contents->index[i];
-            values[i] = right_contents->values[i];
+            values[i] = left_contents->values[i];
         }
         for (int i = 0; i < right_contents->cardinality; ++i) {
             index[left_card+i] = right_contents->index[i];
@@ -214,7 +230,7 @@ public:
 
         printf("CONTENTS : ");
         for (int i = 0; i < cardinality; ++i) {
-               printf(" (%lu, %d)|", index[i], values[i]);
+               printf(" (%d, %d)|", index[i], values[i]);
         }
         printf("\n---cardinality: %d---\n", cardinality);
     }

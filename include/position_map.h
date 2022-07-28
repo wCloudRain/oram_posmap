@@ -7,6 +7,9 @@
 
 #include <stdint-gcc.h>
 
+#include <iostream>
+
+
 typedef uint64_t address;
 
 class position_map
